@@ -76,6 +76,11 @@ export default function App() {
     await refreshAll();
   }
 
+  async function handleBatchRecordAttendance(payload) {
+    await api.batchRecordAttendance(payload);
+    await refreshAll();
+  }
+
   const ActiveIcon = tabs.find((tab) => tab.id === activeTab)?.icon || Users;
 
   return (
@@ -147,6 +152,7 @@ export default function App() {
                 attendance={attendance}
                 studentMap={studentMap}
                 onRecord={handleRecordAttendance}
+                onBatchRecord={handleBatchRecordAttendance}
               />
             )}
             {activeTab === "stats" && <HourStats stats={stats} />}

@@ -35,5 +35,7 @@ export const api = {
   getAttendance: () => request("/attendance"),
   recordAttendance: (payload) =>
     request("/attendance", { method: "POST", body: JSON.stringify(payload) }),
+  batchRecordAttendance: (payload) =>
+    request("/attendance/batch", { method: "POST", body: JSON.stringify(payload) }),
   getHourStats: () => request("/stats/hours"),
 };

@@ -36,3 +36,40 @@ def record_attendance():
     }
     store.attendance.append(record)
     return jsonify(record), 201
+
+
+@attendance_bp.post("/batch")
+def batch_record_attendance():
+    payload = request.get_json() or {}
+    session_id = int(payload.get("session_id", 0))
+    records = payload.get("records", [])
+
+    if not session_id or not records:
+        return jsonify({"error": "session_id and records are required"}), 400
+
+    results = []
+    for item in records:
+        student_id = int(item.get("student_id", 0))
+        status = item.get("status", "present")
+        existing = next(
+            (
+                r
+                for r in store.attendance
+                if r["session_id"] == session_id and r["student_id"] == student_id
+            ),
+            None,
+        )
+        if existing:
+            existing["status"] = status
+            results.append(existing)
+        else:
+            record = {
+                "id": store.next_id("attendance"),
+                "session_id": session_id,
+                "student_id": student_id,
+                "status": status,
+            }
+            store.attendance.append(record)
+            results.append(record)
+
+    return jsonify(results), 200

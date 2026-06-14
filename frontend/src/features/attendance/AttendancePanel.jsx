@@ -1,5 +1,5 @@
-import { CheckCircle2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { CheckCircle2, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { SectionHeader } from "../../components/SectionHeader";
 
 const statusLabels = {
@@ -9,10 +9,11 @@ const statusLabels = {
   absent: "缺勤",
 };
 
-export function AttendancePanel({ schedule, classes, attendance, studentMap, onRecord }) {
+export function AttendancePanel({ schedule, classes, attendance, studentMap, onRecord, onBatchRecord }) {
   const [sessionId, setSessionId] = useState(schedule[0]?.id || "");
   const [studentId, setStudentId] = useState("");
   const [status, setStatus] = useState("present");
+  const [batchStatuses, setBatchStatuses] = useState({});
 
   const selectedSession = schedule.find((item) => item.id === Number(sessionId));
   const students = useMemo(() => {
@@ -21,6 +22,17 @@ export function AttendancePanel({ schedule, classes, attendance, studentMap, onR
       classes.find((item) => item.id === selectedSession.class_id)?.students || []
     );
   }, [classes, selectedSession]);
+
+  useEffect(() => {
+    const initial = {};
+    students.forEach((student) => {
+      const existing = attendance.find(
+        (r) => r.session_id === Number(sessionId) && r.student_id === student.id
+      );
+      initial[student.id] = existing?.status || "present";
+    });
+    setBatchStatuses(initial);
+  }, [sessionId, students, attendance]);
 
   async function submit(event) {
     event.preventDefault();
@@ -31,6 +43,31 @@ export function AttendancePanel({ schedule, classes, attendance, studentMap, onR
       status,
     });
     setStudentId("");
+  }
+
+  async function submitBatch(event) {
+    event.preventDefault();
+    if (!sessionId || students.length === 0) return;
+    const records = students.map((student) => ({
+      student_id: student.id,
+      status: batchStatuses[student.id] || "present",
+    }));
+    await onBatchRecord({
+      session_id: Number(sessionId),
+      records,
+    });
+  }
+
+  function setAllStatus(targetStatus) {
+    const updated = {};
+    students.forEach((student) => {
+      updated[student.id] = targetStatus;
+    });
+    setBatchStatuses(updated);
+  }
+
+  function updateStudentStatus(studentId, newStatus) {
+    setBatchStatuses((prev) => ({ ...prev, [studentId]: newStatus }));
   }
 
   return (
@@ -72,6 +109,68 @@ export function AttendancePanel({ schedule, classes, attendance, studentMap, onR
           保存考勤
         </button>
       </form>
+
+      {selectedSession && (
+        <div className="table-panel">
+          <SectionHeader eyebrow="Batch" title="全班批量考勤" />
+          <div className="batch-toolbar">
+            <span className="batch-hint">
+              <Users size={16} />
+              共 {students.length} 名学员
+            </span>
+            <div className="batch-presets">
+              {Object.entries(statusLabels).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={`preset-btn ${value}`}
+                  onClick={() => setAllStatus(value)}
+                >
+                  全部{label}
+                </button>
+              ))}
+            </div>
+            <button className="primary-action batch-submit" type="button" onClick={submitBatch}>
+              <CheckCircle2 size={18} />
+              提交全班考勤
+            </button>
+          </div>
+          <div className="responsive-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>学员</th>
+                  <th>手机号</th>
+                  <th>考勤状态</th>
+                </tr>
+              </thead>
+              <tbody>
+                {students.map((student) => (
+                  <tr key={student.id}>
+                    <td>
+                      <strong>{student.name}</strong>
+                    </td>
+                    <td>{student.phone}</td>
+                    <td>
+                      <select
+                        className="status-select"
+                        value={batchStatuses[student.id] || "present"}
+                        onChange={(event) => updateStudentStatus(student.id, event.target.value)}
+                      >
+                        {Object.entries(statusLabels).map(([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="table-panel">
         <SectionHeader eyebrow="Attendance" title="考勤记录" />
