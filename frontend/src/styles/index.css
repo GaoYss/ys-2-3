@@ -396,10 +396,46 @@ td small {
   color: #0f766e;
 }
 
+.notice.warning {
+  background: #fff3d6;
+  border-color: #e0b94f;
+  color: #946200;
+}
+
 .notice.error {
   background: #ffe9e7;
   border-color: #ffb8ae;
   color: #b42318;
+}
+
+.notice-message {
+  flex: 1;
+}
+
+.notice-close {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: inherit;
+  display: inline-flex;
+  justify-content: center;
+  margin-left: auto;
+  min-height: 28px;
+  min-width: 28px;
+  opacity: 0.7;
+  padding: 4px;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.notice-close:hover {
+  background: rgba(0, 0, 0, 0.06);
+  opacity: 1;
+}
+
+.notice-close:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
 }
 
 button:disabled {

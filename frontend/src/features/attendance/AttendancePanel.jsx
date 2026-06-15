@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, Loader2, Users } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle2, Loader2, Users, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { SectionHeader } from "../../components/SectionHeader";
 
@@ -43,7 +43,7 @@ export function AttendancePanel({ schedule, classes, attendance, studentMap, onR
   }, [sessionId, students, attendance]);
 
   useEffect(() => {
-    if (!notice) return;
+    if (!notice || notice.type !== "success") return;
     const timer = setTimeout(() => setNotice(null), 3500);
     return () => clearTimeout(timer);
   }, [notice]);
@@ -62,10 +62,17 @@ export function AttendancePanel({ schedule, classes, attendance, studentMap, onR
       setNotice({ type: "success", message: "考勤保存成功" });
       setStudentId("");
     } catch (error) {
-      setNotice({
-        type: "error",
-        message: `保存失败：${error.message || "请稍后重试"}`,
-      });
+      if (error.saveSucceeded) {
+        setNotice({
+          type: "warning",
+          message: error.message || "保存成功，但数据刷新失败，请点击刷新数据按钮恢复",
+        });
+      } else {
+        setNotice({
+          type: "error",
+          message: `保存失败：${error.message || "请稍后重试"}`,
+        });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -87,10 +94,17 @@ export function AttendancePanel({ schedule, classes, attendance, studentMap, onR
       });
       setNotice({ type: "success", message: `全班 ${students.length} 人考勤已提交` });
     } catch (error) {
-      setNotice({
-        type: "error",
-        message: `批量提交失败：${error.message || "请稍后重试"}`,
-      });
+      if (error.saveSucceeded) {
+        setNotice({
+          type: "warning",
+          message: error.message || "保存成功，但数据刷新失败，请点击刷新数据按钮恢复",
+        });
+      } else {
+        setNotice({
+          type: "error",
+          message: `批量提交失败：${error.message || "请稍后重试"}`,
+        });
+      }
     } finally {
       setBatchSubmitting(false);
     }
@@ -119,12 +133,20 @@ export function AttendancePanel({ schedule, classes, attendance, studentMap, onR
     <section className="module">
       {notice && (
         <div className={`notice ${notice.type}`}>
-          {notice.type === "success" ? (
-            <CheckCircle2 size={18} />
-          ) : (
-            <AlertCircle size={18} />
+          {notice.type === "success" && <CheckCircle2 size={18} />}
+          {notice.type === "error" && <AlertCircle size={18} />}
+          {notice.type === "warning" && <AlertTriangle size={18} />}
+          <span className="notice-message">{notice.message}</span>
+          {notice.type !== "success" && (
+            <button
+              type="button"
+              className="notice-close"
+              onClick={() => setNotice(null)}
+              aria-label="关闭提示"
+            >
+              <X size={16} />
+            </button>
           )}
-          <span>{notice.message}</span>
         </div>
       )}
 

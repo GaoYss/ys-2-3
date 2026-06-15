@@ -73,12 +73,24 @@ export default function App() {
 
   async function handleRecordAttendance(payload) {
     await api.recordAttendance(payload);
-    await refreshAll();
+    try {
+      await refreshAll();
+    } catch (refreshError) {
+      const err = new Error(`保存成功，但数据刷新失败：${refreshError.message || "请点击刷新数据按钮恢复"}`);
+      err.saveSucceeded = true;
+      throw err;
+    }
   }
 
   async function handleBatchRecordAttendance(payload) {
     await api.batchRecordAttendance(payload);
-    await refreshAll();
+    try {
+      await refreshAll();
+    } catch (refreshError) {
+      const err = new Error(`保存成功，但数据刷新失败：${refreshError.message || "请点击刷新数据按钮恢复"}`);
+      err.saveSucceeded = true;
+      throw err;
+    }
   }
 
   const ActiveIcon = tabs.find((tab) => tab.id === activeTab)?.icon || Users;
