@@ -380,16 +380,44 @@ td small {
 }
 
 .notice {
+  align-items: center;
   background: #fff8e7;
   border: 1px solid #f0d595;
   border-radius: 8px;
+  display: flex;
+  gap: 10px;
   margin-bottom: 18px;
   padding: 12px 14px;
+}
+
+.notice.success {
+  background: #e7f4ef;
+  border-color: #86c9a7;
+  color: #0f766e;
 }
 
 .notice.error {
   background: #ffe9e7;
   border-color: #ffb8ae;
+  color: #b42318;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 900px) {
