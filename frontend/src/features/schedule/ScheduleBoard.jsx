@@ -1,22 +1,73 @@
-import { CalendarPlus } from "lucide-react";
-import { useState } from "react";
+import { AlertCircle, AlertTriangle, CalendarPlus, CheckCircle2, Loader2, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { SectionHeader } from "../../components/SectionHeader";
 
 export function ScheduleBoard({ classes, courses, schedule, onGenerate }) {
   const [classId, setClassId] = useState("");
   const [days, setDays] = useState(8);
+  const [submitting, setSubmitting] = useState(false);
+  const [notice, setNotice] = useState(null);
+
+  useEffect(() => {
+    if (!notice || notice.type !== "success") return;
+    const timer = setTimeout(() => setNotice(null), 3500);
+    return () => clearTimeout(timer);
+  }, [notice]);
 
   async function submit(event) {
     event.preventDefault();
-    await onGenerate({ class_id: classId || undefined, days });
+    if (submitting) return;
+    setSubmitting(true);
+    setNotice(null);
+    try {
+      await onGenerate({ class_id: classId || undefined, days });
+      setNotice({ type: "success", message: "课程表生成成功" });
+    } catch (error) {
+      if (error.saveSucceeded) {
+        setNotice({
+          type: "warning",
+          message: error.message || "生成成功，但数据刷新出了问题，请点击刷新数据按钮恢复",
+        });
+      } else {
+        setNotice({
+          type: "error",
+          message: `生成失败：${error.message || "请稍后重试"}`,
+        });
+      }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
     <section className="module">
+      {notice && (
+        <div className={`notice ${notice.type}`}>
+          {notice.type === "success" && <CheckCircle2 size={18} />}
+          {notice.type === "error" && <AlertCircle size={18} />}
+          {notice.type === "warning" && <AlertTriangle size={18} />}
+          <span className="notice-message">{notice.message}</span>
+          {notice.type !== "success" && (
+            <button
+              type="button"
+              className="notice-close"
+              onClick={() => setNotice(null)}
+              aria-label="关闭提示"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+      )}
+
       <form className="toolbar-panel" onSubmit={submit}>
         <label>
           排课班级
-          <select value={classId} onChange={(event) => setClassId(event.target.value)}>
+          <select
+            value={classId}
+            onChange={(event) => setClassId(event.target.value)}
+            disabled={submitting}
+          >
             <option value="">全部班级</option>
             {classes.map((item) => (
               <option key={item.id} value={item.id}>
@@ -33,11 +84,25 @@ export function ScheduleBoard({ classes, courses, schedule, onGenerate }) {
             type="number"
             value={days}
             onChange={(event) => setDays(Number(event.target.value))}
+            disabled={submitting}
           />
         </label>
-        <button className="primary-action" type="submit">
-          <CalendarPlus size={18} />
-          自动生成课程表
+        <button
+          className="primary-action"
+          type="submit"
+          disabled={submitting}
+        >
+          {submitting ? (
+            <>
+              <Loader2 size={18} className="spin" />
+              生成中...
+            </>
+          ) : (
+            <>
+              <CalendarPlus size={18} />
+              自动生成课程表
+            </>
+          )}
         </button>
       </form>
 

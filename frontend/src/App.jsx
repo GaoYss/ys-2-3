@@ -58,17 +58,35 @@ export default function App() {
 
   async function handleCreateClass(payload) {
     await api.createClass(payload);
-    await refreshAll();
+    try {
+      await refreshAll();
+    } catch (refreshError) {
+      const err = new Error("保存成功，但数据刷新出了问题，请点击刷新数据按钮恢复");
+      err.saveSucceeded = true;
+      throw err;
+    }
   }
 
   async function handleAddStudent(classId, payload) {
     await api.addStudent(classId, payload);
-    await refreshAll();
+    try {
+      await refreshAll();
+    } catch (refreshError) {
+      const err = new Error("保存成功，但数据刷新出了问题，请点击刷新数据按钮恢复");
+      err.saveSucceeded = true;
+      throw err;
+    }
   }
 
   async function handleGenerateSchedule(payload) {
     await api.generateSchedule(payload);
-    await refreshAll();
+    try {
+      await refreshAll();
+    } catch (refreshError) {
+      const err = new Error("生成成功，但数据刷新出了问题，请点击刷新数据按钮恢复");
+      err.saveSucceeded = true;
+      throw err;
+    }
   }
 
   async function handleRecordAttendance(payload) {
@@ -76,7 +94,7 @@ export default function App() {
     try {
       await refreshAll();
     } catch (refreshError) {
-      const err = new Error(`保存成功，但数据刷新失败：${refreshError.message || "请点击刷新数据按钮恢复"}`);
+      const err = new Error("保存成功，但数据刷新出了问题，请点击刷新数据按钮恢复");
       err.saveSucceeded = true;
       throw err;
     }
@@ -87,7 +105,7 @@ export default function App() {
     try {
       await refreshAll();
     } catch (refreshError) {
-      const err = new Error(`保存成功，但数据刷新失败：${refreshError.message || "请点击刷新数据按钮恢复"}`);
+      const err = new Error("保存成功，但数据刷新出了问题，请点击刷新数据按钮恢复");
       err.saveSucceeded = true;
       throw err;
     }

@@ -1,16 +1,21 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5000/api";
 
 async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-    ...options,
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+      ...options,
+    });
+  } catch (_) {
+    throw new Error("网络连接失败，请确认后端服务已启动");
+  }
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
+    throw new Error("请求出错，请稍后重试或刷新页面");
   }
 
   return response.json();

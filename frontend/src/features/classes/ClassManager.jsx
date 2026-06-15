@@ -1,5 +1,5 @@
-import { Plus, UserPlus } from "lucide-react";
-import { useState } from "react";
+import { AlertCircle, AlertTriangle, CheckCircle2, Loader2, Plus, UserPlus, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { SectionHeader } from "../../components/SectionHeader";
 import { StatCard } from "../../components/StatCard";
 
@@ -14,28 +14,97 @@ const initialClass = {
 export function ClassManager({ classes, onCreateClass, onAddStudent }) {
   const [classForm, setClassForm] = useState(initialClass);
   const [studentForm, setStudentForm] = useState({ classId: "", name: "", phone: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [studentSubmitting, setStudentSubmitting] = useState(false);
+  const [notice, setNotice] = useState(null);
 
   const totalStudents = classes.reduce((sum, item) => sum + item.students.length, 0);
   const totalCapacity = classes.reduce((sum, item) => sum + item.capacity, 0);
 
+  useEffect(() => {
+    if (!notice || notice.type !== "success") return;
+    const timer = setTimeout(() => setNotice(null), 3500);
+    return () => clearTimeout(timer);
+  }, [notice]);
+
   async function submitClass(event) {
     event.preventDefault();
-    await onCreateClass(classForm);
-    setClassForm(initialClass);
+    if (submitting || studentSubmitting) return;
+    setSubmitting(true);
+    setNotice(null);
+    try {
+      await onCreateClass(classForm);
+      setNotice({ type: "success", message: "班级创建成功" });
+      setClassForm(initialClass);
+    } catch (error) {
+      if (error.saveSucceeded) {
+        setNotice({
+          type: "warning",
+          message: error.message || "保存成功，但数据刷新出了问题，请点击刷新数据按钮恢复",
+        });
+        setClassForm(initialClass);
+      } else {
+        setNotice({
+          type: "error",
+          message: `创建失败：${error.message || "请稍后重试"}`,
+        });
+      }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function submitStudent(event) {
     event.preventDefault();
-    if (!studentForm.classId) return;
-    await onAddStudent(studentForm.classId, {
-      name: studentForm.name,
-      phone: studentForm.phone,
-    });
-    setStudentForm({ classId: "", name: "", phone: "" });
+    if (!studentForm.classId || submitting || studentSubmitting) return;
+    setStudentSubmitting(true);
+    setNotice(null);
+    try {
+      await onAddStudent(studentForm.classId, {
+        name: studentForm.name,
+        phone: studentForm.phone,
+      });
+      setNotice({ type: "success", message: "学员添加成功" });
+      setStudentForm({ classId: "", name: "", phone: "" });
+    } catch (error) {
+      if (error.saveSucceeded) {
+        setNotice({
+          type: "warning",
+          message: error.message || "保存成功，但数据刷新出了问题，请点击刷新数据按钮恢复",
+        });
+        setStudentForm({ classId: "", name: "", phone: "" });
+      } else {
+        setNotice({
+          type: "error",
+          message: `添加失败：${error.message || "请稍后重试"}`,
+        });
+      }
+    } finally {
+      setStudentSubmitting(false);
+    }
   }
 
   return (
     <section className="module">
+      {notice && (
+        <div className={`notice ${notice.type}`}>
+          {notice.type === "success" && <CheckCircle2 size={18} />}
+          {notice.type === "error" && <AlertCircle size={18} />}
+          {notice.type === "warning" && <AlertTriangle size={18} />}
+          <span className="notice-message">{notice.message}</span>
+          {notice.type !== "success" && (
+            <button
+              type="button"
+              className="notice-close"
+              onClick={() => setNotice(null)}
+              aria-label="关闭提示"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="metrics-grid">
         <StatCard label="班级数" value={classes.length} helper="当前系统内班级" />
         <StatCard label="学员数" value={totalStudents} helper="已分配到班级" />
@@ -53,6 +122,7 @@ export function ClassManager({ classes, onCreateClass, onAddStudent }) {
                 value={classForm.name}
                 onChange={(event) => setClassForm({ ...classForm, name: event.target.value })}
                 placeholder="例如 JavaScript 就业班"
+                disabled={submitting || studentSubmitting}
               />
             </label>
             <label>
@@ -60,6 +130,7 @@ export function ClassManager({ classes, onCreateClass, onAddStudent }) {
               <select
                 value={classForm.level}
                 onChange={(event) => setClassForm({ ...classForm, level: event.target.value })}
+                disabled={submitting || studentSubmitting}
               >
                 <option>入门</option>
                 <option>进阶</option>
@@ -72,6 +143,7 @@ export function ClassManager({ classes, onCreateClass, onAddStudent }) {
                 required
                 value={classForm.teacher}
                 onChange={(event) => setClassForm({ ...classForm, teacher: event.target.value })}
+                disabled={submitting || studentSubmitting}
               />
             </label>
             <label>
@@ -80,6 +152,7 @@ export function ClassManager({ classes, onCreateClass, onAddStudent }) {
                 required
                 value={classForm.room}
                 onChange={(event) => setClassForm({ ...classForm, room: event.target.value })}
+                disabled={submitting || studentSubmitting}
               />
             </label>
             <label>
@@ -89,12 +162,26 @@ export function ClassManager({ classes, onCreateClass, onAddStudent }) {
                 type="number"
                 value={classForm.capacity}
                 onChange={(event) => setClassForm({ ...classForm, capacity: event.target.value })}
+                disabled={submitting || studentSubmitting}
               />
             </label>
           </div>
-          <button className="primary-action" type="submit">
-            <Plus size={18} />
-            创建班级
+          <button
+            className="primary-action"
+            type="submit"
+            disabled={submitting || studentSubmitting}
+          >
+            {submitting ? (
+              <>
+                <Loader2 size={18} className="spin" />
+                创建中...
+              </>
+            ) : (
+              <>
+                <Plus size={18} />
+                创建班级
+              </>
+            )}
           </button>
         </form>
 
@@ -107,6 +194,7 @@ export function ClassManager({ classes, onCreateClass, onAddStudent }) {
                 required
                 value={studentForm.classId}
                 onChange={(event) => setStudentForm({ ...studentForm, classId: event.target.value })}
+                disabled={submitting || studentSubmitting}
               >
                 <option value="">选择班级</option>
                 {classes.map((item) => (
@@ -122,6 +210,7 @@ export function ClassManager({ classes, onCreateClass, onAddStudent }) {
                 required
                 value={studentForm.name}
                 onChange={(event) => setStudentForm({ ...studentForm, name: event.target.value })}
+                disabled={submitting || studentSubmitting}
               />
             </label>
             <label>
@@ -129,12 +218,26 @@ export function ClassManager({ classes, onCreateClass, onAddStudent }) {
               <input
                 value={studentForm.phone}
                 onChange={(event) => setStudentForm({ ...studentForm, phone: event.target.value })}
+                disabled={submitting || studentSubmitting}
               />
             </label>
           </div>
-          <button className="primary-action" type="submit">
-            <UserPlus size={18} />
-            添加学员
+          <button
+            className="primary-action"
+            type="submit"
+            disabled={submitting || studentSubmitting}
+          >
+            {studentSubmitting ? (
+              <>
+                <Loader2 size={18} className="spin" />
+                添加中...
+              </>
+            ) : (
+              <>
+                <UserPlus size={18} />
+                添加学员
+              </>
+            )}
           </button>
         </form>
       </div>
